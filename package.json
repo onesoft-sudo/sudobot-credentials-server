@@ -1,5 +1,24 @@
 {
-  "dependencies": {
-    "mlkem": "^2.3.0"
-  }
+    "name": "@osn/sudobot-credentials-server",
+    "version": "1.0.0",
+    "description": "A secure credentials server for the SudoBot.",
+    "author": {
+        "name": "Ar Rakin",
+        "email": "rakinar2@onesoftnet.eu.org",
+        "url": "https://github.com/virtual-designer"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.7",
+        "fastify": "^5.2.1",
+        "mlkem": "^2.3.0",
+        "reflect-metadata": "^0.2.2"
+    },
+    "devDependencies": {
+        "prettier": "^3.4.2"
+    },
+    "scripts": {
+        "start": "bun src/main/typescript/main.ts",
+        "start:node": "node build/out/main/typescript/main.js",
+        "build": "tsc && (node -r \"const fs = require('fs'); fs.renameSync('build/src', 'build/out');\" || bun -r \"const fs = require('fs'); fs.renameSync('build/src', 'build/out');\")"
+    }
 }
