@@ -1,0 +1,112 @@
+#!/usr/bin/env bun
+
+import { MlKem768 } from "mlkem";
+import * as crypto from "crypto";
+import { writeFile } from "fs/promises";
+import { readFile } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
+import util from "util";
+
+async function handleError<T>(
+    promise: Promise<T>,
+): Promise<[T, undefined] | [undefined, Error]> {
+    try {
+        const result = await promise;
+        return [result, undefined];
+    } catch (error) {
+        return [undefined, error];
+    }
+}
+
+async function main() {
+    const argv_0 = path.basename(process.argv[1]);
+
+    if (process.argv.length !== 5) {
+        console.error(
+            `Usage: ${argv_0} <private_key_file> <encrypted_file> <output_file>`,
+        );
+        process.exit(1);
+    }
+
+    const [, , privateKeyFile, inputFile, outputFile] = process.argv;
+
+    if (existsSync(outputFile)) {
+        console.error(`${argv_0}: ${outputFile}: File exists`);
+        process.exit(1);
+    }
+
+    const [privateKeyFileContents, privateKeyError] = await handleError(
+        readFile(privateKeyFile, "binary"),
+    );
+
+    if (privateKeyError) {
+        console.error(
+            `${argv_0}: ${privateKeyFile}: ${"errno" in privateKeyError && typeof privateKeyError.errno === "number" ? (util.getSystemErrorMessage ? util.getSystemErrorMessage(privateKeyError.errno) : privateKeyError.message) : "Unknown error"}`,
+        );
+        process.exit(1);
+    }
+
+    const privateKey = new Uint8Array(
+        Buffer.from(privateKeyFileContents, "binary"),
+    );
+    const [inputFileContents, inputFileError] = await handleError(
+        readFile(inputFile, "binary"),
+    );
+
+    if (inputFileError) {
+        console.error(
+            `${argv_0}: ${inputFile}: ${"errno" in inputFileError && typeof inputFileError.errno === "number" ? (util.getSystemErrorMessage ? util.getSystemErrorMessage(inputFileError.errno) : inputFileError.message) : "Unknown error"}`,
+        );
+        process.exit(1);
+    }
+
+    const inputFileBuffer = Buffer.from(inputFileContents, "binary");
+
+    if (inputFileBuffer.byteLength < 16 || inputFileBuffer.readUInt32BE(0) !== 0x7c83) {
+        console.error(`${argv_0}: ${inputFile}: Not a valid encrypted file`);
+        process.exit(1);
+    }
+
+    const ivSize = inputFileBuffer.readUInt32BE(4);
+    const authTagSize = inputFileBuffer.readUInt32BE(8);
+    const cipherTextSize = inputFileBuffer.readUInt32BE(12);
+    const iv = Uint8Array.prototype.slice.call(inputFileBuffer, 16, 16 + ivSize);
+    const authTag = Uint8Array.prototype.slice.call(
+        inputFileBuffer,
+        16 + ivSize,
+        16 + ivSize + authTagSize
+    );
+    const cipherText = Uint8Array.prototype.slice.call(
+        inputFileBuffer,
+        16 + ivSize + authTagSize,
+        16 + ivSize + authTagSize + cipherTextSize
+    );
+    const encryptedEnv = Uint8Array.prototype.slice.call(
+        inputFileBuffer,
+        16 + ivSize + authTagSize + cipherTextSize
+    );
+
+    try {
+        const decryptionManager = new MlKem768();
+        const sharedSecret = await decryptionManager.decap(cipherText, privateKey);
+        const decipher = crypto.createDecipheriv("aes-256-gcm", sharedSecret, iv);
+        decipher.setAuthTag(authTag);
+        const decryptedText = decipher.update(encryptedEnv, undefined, "utf8") + decipher.final("utf8");
+        
+        await writeFile(outputFile, decryptedText);
+        console.log("Wrote decrypted data to: ", outputFile);
+    }
+    catch (error) {
+        console.error(`${argv_0}: ${inputFile}: ${error.message}`);
+        process.exit(1);
+    }
+}
+
+function intTo4BytesBuffer(value: number): Buffer {
+    const buffer = Buffer.alloc(4);
+    buffer.writeUInt32BE(value);
+    return buffer;
+}
+
+main().then();

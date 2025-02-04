@@ -3,6 +3,7 @@
 /tmp
 /bun.lock
 /.env
+/.env.encrypted
 
 # Logs
 
