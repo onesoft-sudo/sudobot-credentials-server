@@ -10,6 +10,7 @@ class Server {
     private readonly port = process.env.SBC_SERVER_PORT
         ? +process.env.SBC_SERVER_PORT
         : 4500;
+    private readonly host = process.env.SBC_SERVER_HOST ?? "0.0.0.0"
     public readonly encryptionService = new EncryptionService(this);
     public readonly twoFactorAuthService = new TwoFactorAuthService(this);
 
@@ -28,6 +29,7 @@ class Server {
         this.fastify.listen(
             {
                 port: this.port,
+                host: this.host
             },
             () => {
                 this.fastify.log.info(`Server started on port ${this.port}`);
