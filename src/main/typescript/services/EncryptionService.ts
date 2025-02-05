@@ -14,11 +14,11 @@ class EncryptionService extends Service {
             : "binary";
         const pubKeyString = await readFile(
             process.env.SBC_PUBLIC_KEY!,
-            pubKeyType,
+            pubKeyType === "hex" ? "utf8" : pubKeyType,
         );
         const privKeyString = await readFile(
             process.env.SBC_PRIVATE_KEY!,
-            privKeyType,
+            privKeyType === "hex" ? "utf8" : privKeyType,
         );
 
         this.publicKey = new Uint8Array(Buffer.from(pubKeyString, pubKeyType));
