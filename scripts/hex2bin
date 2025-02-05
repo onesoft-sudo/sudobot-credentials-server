@@ -1,0 +1,83 @@
+#!/usr/bin/env bun
+
+import { writeFile } from "fs/promises";
+import { readFile } from "fs/promises";
+import path from "path";
+import util from "util";
+
+async function main() {
+    const argv_0 = path.basename(process.argv[1]);
+    const {values} = util.parseArgs({
+        allowPositionals: false,
+        args: process.argv.slice(2),
+        options: {
+            help: { type: "boolean", short: "h" },
+            version: { type: "boolean", short: "v" },
+            input: { type: "string", short: "i" },
+            output: { type: "string", short: "o" },
+            hex: { type: "boolean", short: "x" },
+            bin: { type: "boolean", short: "b" },
+        },
+    });
+
+    if (values.help) {
+        console.log(`Usage: ${argv_0} [-h] [-v] [-x] [-b] [-i FILE] [-o FILE]`);
+        console.log(``);
+        console.log(`Options:`);
+        console.log(`  -h, --help    Show this help message and exit`);
+        console.log(`  -v, --version Show the version and exit`);
+        console.log(`  -i, --input   Input file`);
+        console.log(`  -o, --output  Output file`);
+        console.log(`  -x, --hex     Hexadecimal string`);
+        console.log(`  -b, --bin     Binary string`);
+        return;
+    }
+
+    if (values.version) {
+        console.log(`${argv_0} 1.0.0`);
+        return;
+    }
+
+    if (values.hex && values.bin) {
+        console.error(`${argv_0}: cannot specify both --hex/-x and --bin/-b`);
+        process.exit(1);
+    }
+
+    if (!values.hex && !values.bin) {
+        console.error(`${argv_0}: must specify either --hex/-x or --bin/-b`);
+        process.exit(1);
+    }
+
+    if (!values.input) {
+        console.error(`${argv_0}: must specify --input/-i`);
+        process.exit(1);
+    }
+
+    if (!values.output) {
+        console.error(`${argv_0}: must specify --output/-o`);
+        process.exit(1);
+    }
+
+    const inputType = values.hex ? "hex" : "binary";
+    const outputType = values.hex ? "binary" : "hex";
+
+    try {
+        if (inputType === "hex") {
+            const data = await readFile(values.input, "utf8");
+            const buffer = Buffer.from(data, 'hex');
+            await writeFile(values.output, buffer);
+        }
+        else {
+            const data = await readFile(values.input);
+            await writeFile(values.output, data.toString(outputType));
+        }
+    }
+    catch (error) {
+        console.error(
+            `${argv_0}: ${values.input}: ${"errno" in error && typeof error.errno === "number" ? (util.getSystemErrorMessage ? util.getSystemErrorMessage(error.errno) : error.message) : "Unknown error"}`,
+        );
+        process.exit(1);
+    }
+}
+
+main().then().catch(console.error);
