@@ -6,17 +6,25 @@ class EncryptionService extends Service {
     private privateKey?: Uint8Array;
 
     public override async boot() {
+        const pubKeyType = process.env.SBC_PUBLIC_KEY?.endsWith(".keyhex")
+            ? "hex"
+            : "binary";
+        const privKeyType = process.env.SBC_PRIVATE_KEY?.endsWith(".keyhex")
+            ? "hex"
+            : "binary";
         const pubKeyString = await readFile(
             process.env.SBC_PUBLIC_KEY!,
-            process.env.SBC_PUBLIC_KEY?.endsWith(".keyhex") ? "hex" : "binary",
+            pubKeyType,
         );
         const privKeyString = await readFile(
             process.env.SBC_PRIVATE_KEY!,
-            process.env.SBC_PRIVATE_KEY?.endsWith(".keyhex") ? "hex" : "binary",
+            privKeyType,
         );
 
-        this.publicKey = new Uint8Array(Buffer.from(pubKeyString, "binary"));
-        this.privateKey = new Uint8Array(Buffer.from(privKeyString, "binary"));
+        this.publicKey = new Uint8Array(Buffer.from(pubKeyString, pubKeyType));
+        this.privateKey = new Uint8Array(
+            Buffer.from(privKeyString, privKeyType),
+        );
     }
 
     public getPrivateKey(): Uint8Array {

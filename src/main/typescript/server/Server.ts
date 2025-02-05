@@ -10,7 +10,7 @@ class Server {
     private readonly port = process.env.SBC_SERVER_PORT
         ? +process.env.SBC_SERVER_PORT
         : 4500;
-    private readonly host = process.env.SBC_SERVER_HOST ?? "0.0.0.0"
+    private readonly host = process.env.SBC_SERVER_HOST ?? "0.0.0.0";
     public readonly encryptionService = new EncryptionService(this);
     public readonly twoFactorAuthService = new TwoFactorAuthService(this);
 
@@ -29,7 +29,7 @@ class Server {
         this.fastify.listen(
             {
                 port: this.port,
-                host: this.host
+                host: this.host,
             },
             () => {
                 this.fastify.log.info(`Server started on port ${this.port}`);
@@ -57,13 +57,19 @@ class Server {
                     method: action.method,
                     url: action.path,
                     handler: async (request, response) => {
-                        const ret = await handler.call(instance, request, response);
+                        const ret = await handler.call(
+                            instance,
+                            request,
+                            response,
+                        );
 
                         if (ret) {
                             if (ret instanceof Response) {
                                 response.status(ret.status);
 
-                                for (const [key, value] of Object.entries(ret.headers)) {
+                                for (const [key, value] of Object.entries(
+                                    ret.headers,
+                                )) {
                                     response.header(key, value);
                                 }
 
