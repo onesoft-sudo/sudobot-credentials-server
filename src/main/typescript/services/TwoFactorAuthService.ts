@@ -61,7 +61,6 @@ class TwoFactorAuthService extends Service {
         time = Date.now() / 1000,
     ) {
         const generated = this.generate(secret, time);
-        console.log(secret, generated, token);
         return crypto.timingSafeEqual(
             Buffer.from(generated),
             Buffer.from(token),
