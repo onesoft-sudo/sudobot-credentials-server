@@ -24,7 +24,7 @@ async function main() {
 
     if (process.argv.length !== 5) {
         console.error(
-            `Usage: ${argv_0} <public_key_file> <file_to_encrypt> <output_file>`,
+            `Usage: ${argv_0} <public_key_hex_file> <file_to_encrypt> <output_file>`,
         );
         process.exit(1);
     }
@@ -37,7 +37,7 @@ async function main() {
     }
 
     const [publicKeyFileContents, publicKeyError] = await handleError(
-        readFile(publicKeyFile, "binary"),
+        readFile(publicKeyFile, "utf8"),
     );
 
     if (publicKeyError) {
@@ -48,7 +48,7 @@ async function main() {
     }
 
     const publicKey = new Uint8Array(
-        Buffer.from(publicKeyFileContents, "binary"),
+        Buffer.from(publicKeyFileContents, "hex"),
     );
     const [inputFileContents, inputFileError] = await handleError(
         readFile(inputFile, "binary"),
